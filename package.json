@@ -103,6 +103,10 @@
             {
                 "command": "org.butterfly",
                 "title": "Org: Butterfly"
+            },
+            {
+               "command": "org.openAgendaView",
+               "title": "Org: Open Agenda View"
             }
         ],
         "languages": [
