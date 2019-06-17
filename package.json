@@ -69,6 +69,14 @@
                 "title": "Org: Update Clock Total"
             },
             {
+               "command": "org.deadline",
+               "title": "Org: Deadline"
+            },
+            {
+               "command": "org.schedule",
+               "title": "Org: Schedule"
+            },
+            {
                 "command": "org.incrementContext",
                 "title": "Org: Increment Context"
             },

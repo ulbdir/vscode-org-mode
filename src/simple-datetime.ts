@@ -50,7 +50,7 @@ export function buildDateString(datetime: ISimpleDate): string {
         dateString = `${dateString} ${weekday}`;
     }
 
-    return `[${dateString}]`
+    return `<${dateString}>`
 };
 
 export function buildDateTimeString(datetime: ISimpleDateTime): string {

@@ -12,6 +12,27 @@ export function insertTimestamp(textEditor: vscode.TextEditor, edit: vscode.Text
     edit.insert(cursorPos, dateString);
 }
 
+export function insertDeadline(textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
+   const document = Utils.getActiveTextEditorEdit();
+   const cursorPos = Utils.getCursorPosition();
+   
+   const dateObject = Datetime.currentDate();
+   const dateString = Datetime.buildDateString(dateObject);
+
+   edit.insert(cursorPos, "DEADLINE: " + dateString);
+}
+
+export function insertSchedule(textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
+   const document = Utils.getActiveTextEditorEdit();
+   const cursorPos = Utils.getCursorPosition();
+   
+   const dateObject = Datetime.currentDate();
+   const dateString = Datetime.buildDateString(dateObject);
+
+   edit.insert(cursorPos, "SCHEDULED: " + dateString);
+}
+
+
 export function clockIn(textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit) {
     const document = Utils.getActiveTextEditorEdit();
     const cursorPos = Utils.getCursorPosition();

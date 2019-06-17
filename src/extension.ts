@@ -24,6 +24,8 @@ export function activate(context: vscode.ExtensionContext) {
    const clockInCmd = vscode.commands.registerTextEditorCommand('org.clockin', TimestampFunctions.clockIn);
    const clockOutCmd = vscode.commands.registerTextEditorCommand('org.clockout', TimestampFunctions.clockOut);
    const updateClockCmd = vscode.commands.registerTextEditorCommand('org.updateclock', TimestampFunctions.updateClock);
+   context.subscriptions.push(vscode.commands.registerTextEditorCommand('org.deadline', TimestampFunctions.insertDeadline));
+   context.subscriptions.push(vscode.commands.registerTextEditorCommand('org.schedule', TimestampFunctions.insertSchedule));
 
    const incrementContextCmd = vscode.commands.registerTextEditorCommand('org.incrementContext', incrementContext);
 
