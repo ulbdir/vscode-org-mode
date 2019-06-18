@@ -11,6 +11,7 @@ import { OrgFoldingAndOutlineProvider } from './org-folding-and-outline-provider
 import * as PascuaneseFunctions from './pascuanese-functions';
 import * as SubtreeFunctions from './subtree-functions';
 import * as TimestampFunctions from './timestamp-functions';
+import * as LinkProvider from "./link-provider";
 
 export function activate(context: vscode.ExtensionContext) {
    const insertHeadingRespectContentCmd = vscode.commands.registerTextEditorCommand('org.insertHeadingRespectContent', HeaderFunctions.insertHeadingRespectContent);
@@ -49,6 +50,8 @@ export function activate(context: vscode.ExtensionContext) {
       }
    }));
 
+   // Register the link provider for org documents
+   context.subscriptions.push(vscode.languages.registerDocumentLinkProvider({ language: "org" }, new LinkProvider.OrgLinkProvider()));
 
 
    context.subscriptions.push(insertHeadingRespectContentCmd);
