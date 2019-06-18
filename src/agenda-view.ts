@@ -154,7 +154,9 @@ async function parseFiles(files: vscode.Uri[]) {
             // create the agenda items
             const agendaItem = new AgendaItem();
             agendaItem.fileName = item;
-            agendaItem.lineNumber = lineIndex;
+            
+            // editor line numbers start with 1, so add one
+            agendaItem.lineNumber = lineIndex + 1;
             agendaItem.content = lines[lineIndex];
 
             const dates = findTimestampForAgendaItem(lines, lineIndex);
