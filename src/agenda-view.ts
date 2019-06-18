@@ -77,7 +77,7 @@ function findTimestampForAgendaItem(lines: string[], lineIndex: number) {
       if (plainDateMatches) {
          plainResult = new Date();
          plainResult.setFullYear(parseInt(plainDateMatches[1], 10));
-         plainResult.setMonth(parseInt(plainDateMatches[2], 10));
+         plainResult.setMonth(parseInt(plainDateMatches[2], 10) - 1);
          plainResult.setDate(parseInt(plainDateMatches[3], 10));
          console.log("plainResult set to ", plainResult);
       }
@@ -87,7 +87,7 @@ function findTimestampForAgendaItem(lines: string[], lineIndex: number) {
       if (scheduledDateMatches) {
          scheduledResult = new Date();
          scheduledResult.setFullYear(parseInt(scheduledDateMatches[1], 10));
-         scheduledResult.setMonth(parseInt(scheduledDateMatches[2], 10));
+         scheduledResult.setMonth(parseInt(scheduledDateMatches[2], 10) - 1);
          scheduledResult.setDate(parseInt(scheduledDateMatches[3], 10));
          console.log("scheduledResult set to ", scheduledResult);
       }
@@ -97,7 +97,7 @@ function findTimestampForAgendaItem(lines: string[], lineIndex: number) {
       if (deadlineDateMatches) {
          deadlineResult = new Date();
          deadlineResult.setFullYear(parseInt(deadlineDateMatches[1], 10));
-         deadlineResult.setMonth(parseInt(deadlineDateMatches[2], 10));
+         deadlineResult.setMonth(parseInt(deadlineDateMatches[2], 10) - 1);
          deadlineResult.setDate(parseInt(deadlineDateMatches[3], 10));
          console.log("deadlineResult set to ", deadlineResult);
       }
@@ -110,28 +110,6 @@ function findTimestampForAgendaItem(lines: string[], lineIndex: number) {
       scheduled: scheduledResult,
       deadline: deadlineResult
    };
-}
-
-
-function getHeaderAndContent(lines: string[], lineIndex: number) {
-   const result: string[] = new Array()
-
-   // The starting line is the header. It is always part of the result.
-   result.push(lines[lineIndex]);
-
-   // Scan next lines until any other header starts.
-   lineIndex++;
-   while (lineIndex < lines.length) {
-      if (!utils.isHeaderLine(lines[lineIndex])) {
-         result.push(lines[lineIndex]);
-      }
-      else {
-         break;
-      }
-      lineIndex++;
-   }
-
-   return result;
 }
 
 async function parseFiles(files: vscode.Uri[]) {
@@ -154,7 +132,7 @@ async function parseFiles(files: vscode.Uri[]) {
             // create the agenda items
             const agendaItem = new AgendaItem();
             agendaItem.fileName = item;
-            
+
             // editor line numbers start with 1, so add one
             agendaItem.lineNumber = lineIndex + 1;
             agendaItem.content = lines[lineIndex];
@@ -174,7 +152,7 @@ async function parseFiles(files: vscode.Uri[]) {
 }
 
 function formatDate(date: Date) {
-   return datefns.format(date, "[Week] W[, ]dddd Do MMMM YYYY");
+   return datefns.format(date, "dddd Do MMMM");
 }
 
 function formatFilename(name: vscode.Uri) {
@@ -194,11 +172,13 @@ function generateAgendaView(items: AgendaItem[]) {
       public LocationDescription: string;
       public Text: string;
       public When: Date;
+      public Type: string;
 
-      constructor(loc: string, content: string, when: Date) {
+      constructor(loc: string, content: string, when: Date, tp: string) {
          this.LocationDescription = loc;
          this.Text = content;
          this.When = when;
+         this.Type = tp;
       }
    };
 
@@ -217,13 +197,13 @@ function generateAgendaView(items: AgendaItem[]) {
    const itemsToView: ViewableItem[] = new Array();
    scheduledItems.forEach((item) => {
       if (item.date) {
-         itemsToView.push(new ViewableItem(formatFilename(item.fileName) + ":" + item.lineNumber, item.content, item.date));
+         itemsToView.push(new ViewableItem(formatFilename(item.fileName) + ":" + item.lineNumber, item.content, item.date, "DATE"));
       }
       if (item.scheduledDate) {
-         itemsToView.push(new ViewableItem(formatFilename(item.fileName) + ":" + item.lineNumber, item.content, item.scheduledDate));
+         itemsToView.push(new ViewableItem(formatFilename(item.fileName) + ":" + item.lineNumber, item.content, item.scheduledDate, "SCHEDULED"));
       }
       if (item.deadlineDate) {
-         itemsToView.push(new ViewableItem(formatFilename(item.fileName) + ":" + item.lineNumber, item.content, item.deadlineDate));
+         itemsToView.push(new ViewableItem(formatFilename(item.fileName) + ":" + item.lineNumber, item.content, item.deadlineDate, "DEADLINE"));
       }
    });
 
@@ -235,24 +215,30 @@ function generateAgendaView(items: AgendaItem[]) {
 
    // print the sorted agenda items
    let lastDate: Date = null;
+   let lastWeek: number = null;
    itemsToView.forEach((item) => {
 
-      // Add a new date line if the next item is on a different day, or if it is the first item to present
-      if (!lastDate || (lastDate && lastDate.toDateString() !== item.When.toDateString())) {
-         lastDate = item.When;
-
-         result += "\n" + formatDate(item.When) + "\n";
+      // Add a new week header
+      if (!lastWeek || (lastWeek && (lastWeek !== datefns.getISOWeek(item.When)))) {
+         lastWeek = datefns.getISOWeek(item.When);
+         result += "\n* Week " + lastWeek + " " + datefns.getISOYear(item.When) + "\n";
       }
 
-      result += item.LocationDescription + "\t\t" + item.Text + "\n";
+      // Add a new date line if the next item is on a different day, or if it is the first item to present
+      if (!lastDate || (lastDate && (lastDate.toDateString() !== item.When.toDateString()))) {
+         lastDate = item.When;
+
+         result += "** " + formatDate(item.When) + "\n";
+      }
+
+      result += utils.padEnd(item.LocationDescription, 35, "  .") + " " + utils.padEnd(item.Type, 10) + " " + utils.stripHeaderPrefix(item.Text) + "\n";
    })
 
    // print unscheduled items
    result += "\n=== No dates set ===\n";
    unscheduledItems.forEach((item) => {
-      result += formatFilename(item.fileName) + ":" + item.lineNumber + "\t\t" + item.content + "\n";
+      result += formatFilename(item.fileName) + ":" + item.lineNumber + "\t\t" + utils.stripHeaderPrefix(item.content) + "\n";
    })
-
 
    return result;
 }

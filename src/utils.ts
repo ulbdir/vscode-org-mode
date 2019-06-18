@@ -1,27 +1,27 @@
 import * as vscode from 'vscode';
 
 export function getCursorPosition() {
-    const curEditor = vscode.window.activeTextEditor;
-    return curEditor.selection.active;
+   const curEditor = vscode.window.activeTextEditor;
+   return curEditor.selection.active;
 }
 
 
 export function getActiveTextEditorEdit() {
-    return vscode.window.activeTextEditor.document;
+   return vscode.window.activeTextEditor.document;
 }
 
 export function getLine(document: vscode.TextDocument, lineNum: vscode.Position) {
-    return document.lineAt(lineNum).text;
+   return document.lineAt(lineNum).text;
 }
 
 export function getHeaderPrefix(line: string) {
-    const prefix = line.match(/^\*+\s/);
-    if (prefix) {
-        return prefix[0].trim();
-    }
-    else {
-        return "";
-    }
+   const prefix = line.match(/^\*+\s/);
+   if (prefix) {
+      return prefix[0].trim();
+   }
+   else {
+      return "";
+   }
 }
 
 /**
@@ -30,132 +30,132 @@ export function getHeaderPrefix(line: string) {
  * @return the title name
  */
 export function getHeaderTitle(line: string): string {
-    return line.substr(line.indexOf(' ') + 1);
+   return line.substr(line.indexOf(' ') + 1);
 }
 
 export function getPrefix(line: string) {
-    const prefix = line.match(/^\*+|^-\s|^\d+\./);
-    if (prefix) {
-        return prefix[0].trim();
-    }
-    else {
-        return "";
-    }
+   const prefix = line.match(/^\*+|^-\s|^\d+\./);
+   if (prefix) {
+      return prefix[0].trim();
+   }
+   else {
+      return "";
+   }
 }
 
 export function findParentPrefix(document: vscode.TextDocument, pos: vscode.Position) {
-    const thisLinePrefix = getHeaderPrefix(getLine(document, pos));
-    let curLine = pos.line;
-    let curLinePrefix = "";
+   const thisLinePrefix = getHeaderPrefix(getLine(document, pos));
+   let curLine = pos.line;
+   let curLinePrefix = "";
 
-    while (curLine > 0 && curLinePrefix === thisLinePrefix) {
-        curLine--;
-        const curLineContent = getLine(document, new vscode.Position(curLine, 0));
-        curLinePrefix = getHeaderPrefix(curLineContent);
-    }
+   while (curLine > 0 && curLinePrefix === thisLinePrefix) {
+      curLine--;
+      const curLineContent = getLine(document, new vscode.Position(curLine, 0));
+      curLinePrefix = getHeaderPrefix(curLineContent);
+   }
 
-    return curLinePrefix;
+   return curLinePrefix;
 }
 
 export function findBeginningOfSectionWithHeader(document: vscode.TextDocument, pos: vscode.Position, levelSym: string = "") {
-    const beginningOfSection = findBeginningOfSection(document, pos, levelSym);
-    const prevLineNum = beginningOfSection.line - 1;
-    if (prevLineNum >= 0 && document.lineAt(prevLineNum).text.match(/^\*+\s/)) {
-        return new vscode.Position(prevLineNum, 0);
-    }
-    return beginningOfSection;
+   const beginningOfSection = findBeginningOfSection(document, pos, levelSym);
+   const prevLineNum = beginningOfSection.line - 1;
+   if (prevLineNum >= 0 && document.lineAt(prevLineNum).text.match(/^\*+\s/)) {
+      return new vscode.Position(prevLineNum, 0);
+   }
+   return beginningOfSection;
 }
 
 export function findBeginningOfSection(document: vscode.TextDocument, pos: vscode.Position, levelSym: string = "") {
-    const sectionRegex = getSectionRegex(levelSym);
+   const sectionRegex = getSectionRegex(levelSym);
 
-    let curLine = pos.line;
-    let curPos;
-    let curLinePrefix;
+   let curLine = pos.line;
+   let curPos;
+   let curLinePrefix;
 
-    do {
-        curLine--;
-        curPos = new vscode.Position(curLine, 0);
-        curLinePrefix = getPrefix(getLine(document, curPos));
-    } while (curLine > 0 && inSubsection(curLinePrefix, sectionRegex))
+   do {
+      curLine--;
+      curPos = new vscode.Position(curLine, 0);
+      curLinePrefix = getPrefix(getLine(document, curPos));
+   } while (curLine > 0 && inSubsection(curLinePrefix, sectionRegex))
 
-    if (curPos) {
-        curPos = new vscode.Position(curPos.line + 1, 0);
-    }
+   if (curPos) {
+      curPos = new vscode.Position(curPos.line + 1, 0);
+   }
 
-    return curPos;
+   return curPos;
 }
 
 export function findEndOfSection(document: vscode.TextDocument, pos: vscode.Position, levelSym: string = "") {
-    if (pos.line === document.lineCount - 1) {
-        return pos;
-    }
-    const sectionRegex = getSectionRegex(levelSym);
+   if (pos.line === document.lineCount - 1) {
+      return pos;
+   }
+   const sectionRegex = getSectionRegex(levelSym);
 
-    let curLine = pos.line;
-    let curPos;
-    let curLinePrefix;
+   let curLine = pos.line;
+   let curPos;
+   let curLinePrefix;
 
-    do {
-        curLine++;
-        curPos = new vscode.Position(curLine, 0);
-        curLinePrefix = getPrefix(getLine(document, curPos));
-    } while (curLine < document.lineCount - 1 && inSubsection(curLinePrefix, sectionRegex))
+   do {
+      curLine++;
+      curPos = new vscode.Position(curLine, 0);
+      curLinePrefix = getPrefix(getLine(document, curPos));
+   } while (curLine < document.lineCount - 1 && inSubsection(curLinePrefix, sectionRegex))
 
-    curPos = new vscode.Position(curPos.line - 1, getLine(document, new vscode.Position(curPos.line - 1, 0)).length + 1);
+   curPos = new vscode.Position(curPos.line - 1, getLine(document, new vscode.Position(curPos.line - 1, 0)).length + 1);
 
-    return curPos;
+   return curPos;
 }
 
 // TODO: write findEndOfSection
 export function findEndOfContent(document: vscode.TextDocument, pos: vscode.Position, levelSym: string = "") {
-    if (pos.line === document.lineCount - 1) {
-        return new vscode.Position(pos.line, getLine(document, pos).length);
-    }
-    let sectionRegex = getSectionRegex(levelSym);
-    if (levelSym.startsWith("*")) {      // add an extra star so that content stops at next header of same level
-        const numStars = getStarPrefixCount(levelSym) + 1;
-        sectionRegex = new RegExp(`\\*{${numStars},}`);
-    }
+   if (pos.line === document.lineCount - 1) {
+      return new vscode.Position(pos.line, getLine(document, pos).length);
+   }
+   let sectionRegex = getSectionRegex(levelSym);
+   if (levelSym.startsWith("*")) {      // add an extra star so that content stops at next header of same level
+      const numStars = getStarPrefixCount(levelSym) + 1;
+      sectionRegex = new RegExp(`\\*{${numStars},}`);
+   }
 
-    let curLine = pos.line;
-    let curPos;
-    let curLinePrefix;
+   let curLine = pos.line;
+   let curPos;
+   let curLinePrefix;
 
-    do {
-        curLine++;
-        curPos = new vscode.Position(curLine, 0);
-        curLinePrefix = getPrefix(getLine(document, curPos));
-    } while (curLine < document.lineCount - 1 && inSubsection(curLinePrefix, sectionRegex))
+   do {
+      curLine++;
+      curPos = new vscode.Position(curLine, 0);
+      curLinePrefix = getPrefix(getLine(document, curPos));
+   } while (curLine < document.lineCount - 1 && inSubsection(curLinePrefix, sectionRegex))
 
 
-    return (curLine !== document.lineCount - 1) ? new vscode.Position(curPos.line - 1, getLine(document, new vscode.Position(curPos.line - 1, 0)).length + 1) :
-        new vscode.Position(curPos.line, getLine(document, new vscode.Position(curPos.line, 0)).length + 1);
+   return (curLine !== document.lineCount - 1) ? new vscode.Position(curPos.line - 1, getLine(document, new vscode.Position(curPos.line - 1, 0)).length + 1) :
+      new vscode.Position(curPos.line, getLine(document, new vscode.Position(curPos.line, 0)).length + 1);
 
 }
 
 export function inSubsection(linePrefix: string, sectionRegex: RegExp) {
-    return (linePrefix.match(sectionRegex)) || linePrefix === "-" || !linePrefix || linePrefix.match(/\d+\./);
+   return (linePrefix.match(sectionRegex)) || linePrefix === "-" || !linePrefix || linePrefix.match(/\d+\./);
 }
 
 // returns regex that will match a subsection and facilitate respecting section content
 export function getSectionRegex(prefix: string) {
-    let regex = null;
-    if (prefix.match(/\d+./)) {    // starting on numeric line
-        regex = /\d+./;
-    }
-    else if (prefix === "") {      // starting on other non-header text line
-        regex = /^$/;
-    }
-    else if (prefix === "-") {
-        regex = /^-\s$/;
-    }
-    else if (prefix.startsWith("*")) {                          // starting on header line
-        const numStars = getStarPrefixCount(prefix);
-        regex = new RegExp(`\\*{${numStars},}`);
-    }
+   let regex = null;
+   if (prefix.match(/\d+./)) {    // starting on numeric line
+      regex = /\d+./;
+   }
+   else if (prefix === "") {      // starting on other non-header text line
+      regex = /^$/;
+   }
+   else if (prefix === "-") {
+      regex = /^-\s$/;
+   }
+   else if (prefix.startsWith("*")) {                          // starting on header line
+      const numStars = getStarPrefixCount(prefix);
+      regex = new RegExp(`\\*{${numStars},}`);
+   }
 
-    return regex;
+   return regex;
 }
 
 /**
@@ -168,76 +168,76 @@ export function getSectionRegex(prefix: string) {
  * @return the number of stars reached at the beginning of the specified string before encountering any other character.
  */
 export function getStarPrefixCount(prefix: string) {
-    let currentLevel = -1;
-    while (prefix[++currentLevel] === '*') { ; }
-    return currentLevel;
+   let currentLevel = -1;
+   while (prefix[++currentLevel] === '*') { ; }
+   return currentLevel;
 }
 
 export function surroundWithText(textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit, surroundingText: string, errorMessage: string) {
-    const selection = vscode.window.activeTextEditor.selection;
-    if (selection.isEmpty) {
-        vscode.window.showErrorMessage(errorMessage);
-    } else {
-        edit.insert(selection.start, surroundingText);
-        edit.insert(selection.end, surroundingText);
-    }
+   const selection = vscode.window.activeTextEditor.selection;
+   if (selection.isEmpty) {
+      vscode.window.showErrorMessage(errorMessage);
+   } else {
+      edit.insert(selection.start, surroundingText);
+      edit.insert(selection.end, surroundingText);
+   }
 }
 
 export function prependTextToLine(textEditor: vscode.TextEditor, edit: vscode.TextEditorEdit, prependingText: string) {
-    const document = getActiveTextEditorEdit();
-    const cursorPos = getCursorPosition();
-    const curLine = getLine(document, cursorPos);
+   const document = getActiveTextEditorEdit();
+   const cursorPos = getCursorPosition();
+   const curLine = getLine(document, cursorPos);
 
-    const insertPos = new vscode.Position(cursorPos.line, 0);
-    edit.insert(insertPos, prependingText);
+   const insertPos = new vscode.Position(cursorPos.line, 0);
+   edit.insert(insertPos, prependingText);
 }
 
 // pos is a position anywhere on the target line
 export function moveToEndOfLine(editor: vscode.TextEditor, pos: vscode.Position) {
-    const curLine = getLine(editor.document, pos);
-    const endOfLine = curLine.length;
-    const endOfLinePos = new vscode.Position(pos.line, endOfLine);
-    editor.selections = [new vscode.Selection(endOfLinePos, endOfLinePos)];
+   const curLine = getLine(editor.document, pos);
+   const endOfLine = curLine.length;
+   const endOfLinePos = new vscode.Position(pos.line, endOfLine);
+   editor.selections = [new vscode.Selection(endOfLinePos, endOfLinePos)];
 }
 
 export function getKeywords() {
-    const settings = vscode.workspace.getConfiguration("org");
-    const todoKeywords = settings.get<string[]>("todoKeywords");
-    todoKeywords.push(""); // Since 'nothing' can be a TODO
-    return todoKeywords;
+   const settings = vscode.workspace.getConfiguration("org");
+   const todoKeywords = settings.get<string[]>("todoKeywords");
+   todoKeywords.push(""); // Since 'nothing' can be a TODO
+   return todoKeywords;
 }
 
 export function getLeftZero() {
-    const settings = vscode.workspace.getConfiguration("org");
-    const addLeftZero = settings.get<boolean>("addLeftZero");
-    return addLeftZero;
+   const settings = vscode.workspace.getConfiguration("org");
+   const addLeftZero = settings.get<boolean>("addLeftZero");
+   return addLeftZero;
 }
 
 export function getClockInOutSeparator() {
-    const settings = vscode.workspace.getConfiguration("org");
-    const clockInOutSeparator = settings.get<string>("clockInOutSeparator");
-    return clockInOutSeparator;
+   const settings = vscode.workspace.getConfiguration("org");
+   const clockInOutSeparator = settings.get<string>("clockInOutSeparator");
+   return clockInOutSeparator;
 }
 
 export function getClockTotalSeparator() {
-    const settings = vscode.workspace.getConfiguration("org");
-    const clockTotalSeparator = settings.get<string>("clockTotalSeparator");
-    return clockTotalSeparator;
+   const settings = vscode.workspace.getConfiguration("org");
+   const clockTotalSeparator = settings.get<string>("clockTotalSeparator");
+   return clockTotalSeparator;
 }
 
 export function getUniq(arr: string[]): string[] {
-    // Must also preserve order
-    const map = {};
-    const uniq = [];
+   // Must also preserve order
+   const map = {};
+   const uniq = [];
 
-    arr.forEach(el => {
-        if (!map[el]) {
-            uniq.push(el);
-        }
-        map[el] = true;
-    });
+   arr.forEach(el => {
+      if (!map[el]) {
+         uniq.push(el);
+      }
+      map[el] = true;
+   });
 
-    return uniq;
+   return uniq;
 }
 
 /**
@@ -246,7 +246,7 @@ export function getUniq(arr: string[]): string[] {
  * @return true if the specified line is a block end, false otherwise.
  */
 export function isBlockEndLine(line: string): boolean {
-    return /^\s*#\+END(_|:)/i.test(line);
+   return /^\s*#\+END(_|:)/i.test(line);
 }
 
 /**
@@ -255,7 +255,7 @@ export function isBlockEndLine(line: string): boolean {
  * @return true if the specified line is a block, false otherwise.
  */
 export function isBlockStartLine(line: string): boolean {
-    return /^\s*#\+BEGIN(_|:)/i.test(line);
+   return /^\s*#\+BEGIN(_|:)/i.test(line);
 }
 
 /**
@@ -264,5 +264,28 @@ export function isBlockStartLine(line: string): boolean {
  * @return true if the specified line is a header, false otherwise.
  */
 export function isHeaderLine(line: string): boolean {
-    return /^\*+ /.test(line);
+   return /^\*+ /.test(line);
+}
+
+export function padEnd(s: string, targetLength: number, padString?: string): string {
+   if (s.length > targetLength) {
+      return String(s);
+   }
+   else {
+      targetLength = targetLength - s.length;
+      
+      if (!padString) {
+         padString = " ";
+      }
+      
+      if (targetLength > padString.length) {
+         padString += padString.repeat(targetLength / padString.length);
+      }
+      return String(s) + padString.slice(0, targetLength);
+   }
+}
+
+export function stripHeaderPrefix(text: string) : string {
+   
+   return text.replace(/^\*+\s+/, "");
 }
