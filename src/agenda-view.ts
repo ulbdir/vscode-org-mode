@@ -213,9 +213,22 @@ function generateAgendaView(items: AgendaItem[]) {
       return a.When.getTime() - b.When.getTime();
    });
 
+   // get start of today
+   const thisTime = new Date();
+   const startOfToday = new Date(datefns.getYear(thisTime), datefns.getMonth(thisTime), datefns.getDate(thisTime), 0, 0, 0, 0);
+
+   // for items that are overdue, set the date to today and the type to overdue
+   itemsToView.forEach((item) => {
+      if (item.When < startOfToday) {
+         item.When = startOfToday;
+         item.Type = "OVERDUE";
+      }
+   })
+
    // print the sorted agenda items
    let lastDate: Date = null;
    let lastWeek: number = null;
+   
    itemsToView.forEach((item) => {
 
       // Add a new week header
@@ -228,7 +241,7 @@ function generateAgendaView(items: AgendaItem[]) {
       if (!lastDate || (lastDate && (lastDate.toDateString() !== item.When.toDateString()))) {
          lastDate = item.When;
 
-         result += "** " + formatDate(item.When) + "\n";
+         result += "\n** " + formatDate(item.When) + "\n";
       }
 
       result += utils.padEnd(item.LocationDescription, 35, "  .") + " " + utils.padEnd(item.Type, 10) + " " + utils.stripHeaderPrefix(item.Text) + "\n";
