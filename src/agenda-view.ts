@@ -116,7 +116,13 @@ async function parseFiles(files: vscode.Uri[]) {
    const result: AgendaItem[] = new Array();
 
    files.forEach((item) => {
-      const data = fs.readFileSync(item.path, "utf-8");
+      let data = "";
+      try {
+         data = fs.readFileSync(item.fsPath, "utf-8");
+      } catch (error) {
+         console.log(error)
+      }
+      
       const lines = data.split("\n");
 
       console.log("parseFile(", item.toString(), ")");
